@@ -1,5 +1,5 @@
 The comparison of live soil prokaryotic abundance and diversity using different methods
-##rarefication
+##Figure 1
 library(vegan)
 library(permute)
 library(lattice)
@@ -11,75 +11,6 @@ S1 <- specnumber(Bfn)
  newOTU <- rrarefy(Bfn, raremax1)
 newOTU1 = t(newOTU)
 write.csv(newOTU1,file='ES_otu_delete_rare.csv')
-
-##Venn
-library(VennDiagram)
-library(futile.logger)
-venn.diagram(
-  x = list(T=T$OTU,D=D$OTU,P=P$OTU,S=S$OTU,R=R$OTU),
-  category.names = c("T", "D", "P","S","R"),
-  filename = 'Venn_diagramm.pdf',
-  output=TRUE ,
-  height = 1200 ,
-  width = 1200 ,
-  resolution = 300,
-  compression = "lzw",lwd = 2,
-  lty = 'blank',
-  fill = c("#80B1D3","#FB8072", "#BEBADA", "#FFFFB3","#8DD3C7"),cex = .6,
-  fontface = "plain",
-  fontfamily = "sans",cat.cex =1,
-  cat.fontface = "bold",
-  cat.default.pos = "outer",
-  cat.pos = c(0,-45,240,135,45),
-  cat.dist = c(0.18,0.18,0.18,0.18,0.18),
-  cat.fontfamily = "sans", cat.col=c("#80B1D3","#FB8072", "#BEBADA", "#FFFFB3","#8DD3C7"))
-
-##Upset
- setwd("D:/")
-  install.packages(UpSetR)
-  library(UpSetR)
-  library(ggbreak)
-  install.packages("ggbreak")
-  otu1 <- read.csv("abundance.csv", header=TRUE, row.names=1)
-  otu1[otu1 > 0] <- 1
-  map<-read.table('T.txt',header=T,sep="\t",row.names=1)
-  merged=merge(otu1,map,by="row.names",all.x=TRUE)
-  P=upset(merged, nset = 5, nintersects = 100, order.by = c('freq', 'degree') ,decreasing = c(TRUE, TRUE))+
-    scale_y_break(c(8000,60000),scales=2,space=0,expand = c(0,0))
-  library(RColorBrewer)
-  myCol <- brewer.pal(5, "Set3")
-  upset(merged,
-        order.by = "freq",
-        number.angles = 0, 
-        point.size = 3, 
-        line.size = 1, 
-        mainbar.y.label = "Count of Intersection", 
-        sets.x.label = "Datasets Size", 
-        mb.ratio = c(0.65, 0.35),
-        text.scale = c(2.5, 1.5, 2.5, 1.5, 2, 2),
-        group.by = "T", "D","S","P","R",
-        main.bar.color = "purple",
-        sets.bar.color=myCol,
-        #queries = list(list(query = intersects, 
-                            #params = list("Set2"),
-                            #color = "red",
-                           #active = F, 
-                            #query.name = "Set2"),
-                       #list(query = intersects,  params = list("Set3", "Set4"), active = T,color="cyan",query.name = "Set3_Set4"),
-                       #list(query = intersects,  params = list("Set1", "Set3", "Set4"), color = "orange", active = T,query.name="three sets")),
-        query.legend = "top" )
-  myCol <- c("#8386a8","#f5cf36", "#78b9d2", "#d15c6b","#8fb943")
-  groupColors <- c("#8386a8","#f5cf36", "#78b9d2", "#d15c6b","#8fb943")
-  matrixColors <- c("#67C2A3") 
-  text.scale <- 1.2
-  upset(merged, nset = 5, nintersects = 100, 
-        order.by = c('freq', 'degree'), 
-        decreasing = c(TRUE, TRUE),
-        sets.bar.color=myCol,
-        main.bar.color = "#67C2A3",
-        text.scale = text.scale)
-  
-
 ##diversity
 ##shannon
 library(vegan)
@@ -140,7 +71,6 @@ re = LSD.test(mod1,"treat",alpha = 0.05)
 re1 = re$groups
 re1
 print(re)
-
 ##richness
 library(vegan)
 library(ggplot2)
@@ -187,7 +117,6 @@ p4 = ggplot(species,aes(fill = treat,x=factor(treat,level=c("T","D","S","P","R")
 p4<-p4+scale_fill_brewer(palette = "Set3",direction = -1)
 p4
 ggsave('richness.pdf', p4, width = 4, height = 4)
-
 ##Copies
 library(vegan)
 library(ggplot2)
@@ -234,15 +163,12 @@ p4 = ggplot(species,aes(fill = treat,x=factor(treat,level=c("T","D","S","P","R")
 p4<-p4+scale_fill_brewer(palette = "Set3",direction = -1) 
 p4
 ggsave('copies.pdf', p4, width = 4, height = 4)
-
 mod1 = aov(richness ~ treat, data= species)
 summary(mod1)
 re = LSD.test(mod1,"treat",alpha = 0.05)
 re1 = re$groups
 re1
 print(re)
-
-
 setwd("D:")
   species<-read.csv("BC similarity.csv",header=T)
   species$type<-as.factor(species$type)
@@ -282,110 +208,91 @@ setwd("D:")
   p4
   ggsave('Total.pdf', p4, width = 7, height = 5)
 
-##distance-dacy
-setwd("D:/")
-  site <- read.delim('Rsite.txt', sep = '\t', row.names = 1, check.names = FALSE)
-  site_dis <- geosphere::distm(site[c('longitude', 'laititude')]) 
-  rownames(site_dis) <- rownames(site)
-  colnames(site_dis) <- rownames(site)
-  site_dis <- reshape2::melt(site_dis)
-  site_dis <- subset(site_dis, value != 0)
-  head(site_dis)
-  spe <- read.delim('OTU_rare.txt', sep = '\t', row.names = 1, check.names = FALSE)
-  spe <- data.frame(t(spe))
-  comm_sim <- 1 - as.matrix(vegan::vegdist(spe, method = 'bray'))
-  diag(comm_sim) <- 0 
-  comm_sim[upper.tri(comm_sim)] <- 0  
-  comm_sim <- reshape2::melt(comm_sim)
-  comm_sim <- subset(comm_sim, value != 0)
-  head(comm_sim)
-  comm_dis <- merge(comm_sim, site_dis, by = c('Var1', 'Var2'))
-  names(comm_dis) <- c('site1', 'site2', 'comm_sim', 'site_dis')
-  head(comm_dis)
-  write.table(comm_sim, 'BC similarity.txt', sep = '\t', row.names = FALSE, quote = FALSE)
-  write.table(comm_dis, 'Rsimilarity.txt', sep = '\t', row.names = FALSE, quote = FALSE)
 
-  data <- read.csv('Tsimilarity.csv',header = T)
-  install.packages("ggplot2")
-  library(geosphere)
-  library(ggpubr)
-  library(ggplot2)
-  library(ggpmisc)
-  install
-  site_dis <- geosphere::distm(sample[c('longitude', 'laititude')])
-  data$group <- factor(data$group,levels = c("T","D","S","P","R"))
-  scale_color_manual(values = c("#0073c2","#fa8072","#D5544D","#7aa6dc","#efc000","#ffff00","#27ae60","#317e00"))
-  p1 <- ggplot(data, aes( x = site_dis/1000, y =  comm_sim, color = group)) +
-    geom_point( aes( color = group),size=1.5,alpha=0.5)+ 
-    scale_color_manual(values = c("#80B1D3","#FB8072" ,"#BEBADA","#FFCC00","#8DD3C7"))+
-    labs(x="Distance (km)",y="Bray-Curtis Similarity")+
-    geom_smooth(method = 'lm', formula = y ~ x, se = F,size=1.5) +
-    stat_poly_eq(aes(label=paste(..rr.label..,..p.value.label..,sep = "~~~~")),formula = y~x,parse=T,size=2.5)+
-    theme_bw()+theme(panel.grid.major= element_blank())
-  p2 <- p1+labs(color = "Treat")
-  p2
-  library(dplyr)
-  install.packages("ggpmisc")
-  library(ggpmisc)
-  library(ggpubr)
-  library(gridExtra)
-  data <- read.csv('Tsimilarity.csv',  row.names = 1, check.names = FALSE)
-  fit <- lm(comm_sim~site_dis, data = comm_dis) 
+##Figure 2
 
-##relative abundance
+##
 library(permute)
-    library(vegan)
-    setwd("D:/")
-    OTU_TaxITSCP <-read.csv("ES_otu_delete_rare.csv", header=TRUE)
-    Kingdom=aggregate(x=OTU_TaxITSCP[,2:41]/50680,by=list(OTU_TaxITSCP$Kingdom),FUN='sum')
-    write.csv(Kingdom, file = " Kingdom_16S.csv")
-    Phylum=aggregate(x=OTU_TaxITSCP[,2:261]/51156,by=list(OTU_TaxITSCP$Phylum),FUN='sum')
-    write.csv(Phylum, file = " 1617Phylum.csv")
-    Class=aggregate(x=OTU_TaxITSCP[,2:39]/50680,by=list(OTU_TaxITSCP$Class),FUN='sum')
-    write.csv(Class, file = " Class_16S.csv")
-    Order=aggregate(x=OTU_TaxITSCP[,2:39]/50680,by=list(OTU_TaxITSCP$Order),FUN='sum')
-    write.csv(Order, file = " Order_16S.csv")
-    Family=aggregate(x=OTU_TaxITSCP[,2:39]/50680,by=list(OTU_TaxITSCP$Family),FUN='sum')
-    write.csv(Family, file = " Family_16S.csv")
-    Genus=aggregate(x=OTU_TaxITSCP[,2:261]/51156,by=list(OTU_TaxITSCP$Genus),FUN='sum')
-    write.csv(Genus, file = " Genus_16S.csv")
-    OTU=aggregate(x=OTU_TaxITSCP[,2:261]/51156,by=list(OTU_TaxITSCP$OTU),FUN='sum')
-    write.csv(OTU, file = " OTU_16S.csv")
-    library(reshape2)
-    library(ggplot2)
-    setwd('D:')
-    phylum_top15 <- read.csv('16S.csv', row.names = 1, stringsAsFactors = FALSE, check.names = FALSE)
-    phylum_top15$Taxonomy <- factor(rownames(phylum_top15), levels = rev(rownames(phylum_top15)))
-    phylum_top15 <- melt(phylum_top15, id = 'Taxonomy')
-    group <- read.csv('site_2.csv', row.names = 1, stringsAsFactors = FALSE, check.names = FALSE)
-    names(group)[1] <- 'variable'
-    phylum_top15 <- merge(phylum_top15, group, by = 'variable')
-    x = paste0('site',25:52)
-    phylum_top15$group = factor(phylum_top15$group,levels = x)
-    #write.csv(phylum_top15, file = " phylum_top15.csv")
-    #phylum_top15 <- read.csv(' phylum_top15.csv', row.names = 1, stringsAsFactors = FALSE, check.names = FALSE)
-    p <- ggplot(phylum_top15, aes(variable, 100 * value, fill = Taxonomy)) +
-      geom_col(position = 'stack', width = 0.6) +
-      facet_wrap(~group, scales = 'free_x', ncol = 4) +
-      scale_fill_manual(values =  rev(c( '#8DD3C7', '#FFFFB3', '#BEBADA', '#FB8072', '#80B1D3', '#FDB462', '#B3DE69', '#FCCDE5', '#BC80BD', '#CCEBC5' ,'gray'))) +
-      theme_bw() +theme(panel.grid.major =element_blank(), panel.grid.minor = element_blank(),panel.background = element_blank(),axis.line = element_line(colour = "black"))+
-      theme(strip.background = element_rect( size=0.5))+
-      theme(strip.text.x = element_text(size = 10, colour = "black")) + 
-      theme(axis.text = element_blank())+ 
-      #theme(axis.text.x = element_text(color="black",size = 10,face = "plain"))+
-      theme(axis.text.y = element_text(color="black",size = 10,face = "plain"))+
-      xlab("") + theme(axis.title.x = element_text(size = 8, face = "plain"))+
-      ylab("Relative abundance(%)") + theme(axis.title.y = element_text(size = 15, face = "plain"))+
-      theme(legend.text=element_text(size=12, face = "plain"))+
-      theme(legend.position="bottom")+
-      guides(fill=guide_legend(title=NULL))+
-      theme(panel.grid = element_blank(), panel.background = element_rect(color = 'black', fill = 'transparent'), strip.text = element_text(size = 8))+ 
-      theme(panel.border = element_rect(color="black", size=0.1))+
-      theme(axis.ticks.x=element_line(color="black",size=0.3,lineend = 1))+
-      theme(axis.ticks.y=element_line(color="black",size=0.3,lineend = 1))
-    #guides(fill=FALSE)
-    ggsave('.pdf', p, width = 10, height = 15)
+library(vegan)
+setwd('D:/')
+OTU_Tax16sCP <-read.csv("OTU_rare_TS.csv", header=TRUE,check.names = F)
+#Domain=aggregate(x=OTU_Tax16sCP[,2:101]/51565,by=list(OTU_Tax16sCP$Domain),FUN='sum')
+#write.csv(Domain, file = " Domain_16S.csv")
+datacol = ncol(OTU_Tax16sCP)-7
+colSums(OTU_Tax16sCP[2:datacol])
+rare = sum(OTU_Tax16sCP[,2])
+Kingdom=aggregate(x=OTU_Tax16sCP[,2:datacol]/rare,by=list(OTU_Tax16sCP$Kingdom),FUN='sum')
+Phylum=aggregate(x=OTU_Tax16sCP[,2:datacol]/rare,by=list(OTU_Tax16sCP$Phylum),FUN='sum')
+colSums(Phylum[,2:datacol])
+all <-  Kingdom
+precount <- nrow(all)
+for (i in 1:nrow(Phylum)) {
+  all[precount+i,] <- Phylum[i,]}
+Class=aggregate(x=OTU_Tax16sCP[,2:datacol]/rare,by=list(OTU_Tax16sCP$Class),FUN='sum')
+precount <- nrow(all)
+for (i in 1:nrow(Class)) {
+  all[precount+i,] <- Class[i,]}
+Order=aggregate(x=OTU_Tax16sCP[,2:datacol]/rare,by=list(OTU_Tax16sCP$Order),FUN='sum')
+precount <- nrow(all)
+for (i in 1:nrow(Order)) {
+  all[precount+i,] <- Order[i,]}
+Family=aggregate(x=OTU_Tax16sCP[,2:datacol]/rare,by=list(OTU_Tax16sCP$Family),FUN='sum')
+precount <- nrow(all)
+for (i in 1:nrow(Family)) {
+  all[precount+i,] <- Family[i,]}
+Genus=aggregate(x=OTU_Tax16sCP[,2:datacol]/rare,by=list(OTU_Tax16sCP$Genus),FUN='sum')
+precount <- nrow(all)
+for (i in 1:nrow(Genus)) {
+  all[precount+i,] <- Genus[i,]}
+write.csv(all, file = "TS.csv",row.names = FALSE)
+colSums(Phylum[,2:datacol])
+colSums(Class[,2:datacol])
+colSums(Order[,2:datacol])
+colSums(Family[,2:datacol])
+colSums(Genus[,2:datacol])
+all$average = rowMeans(all[,2:datacol])
+screen0.0001 <-all
+result <- subset(screen0.0001[which(screen0.0001$average>0.0005),])
+write.csv(result[,1:ncol(result)-1], file = "TS.csv",row.names = FALSE)
+library(reshape2)
+data <-read.csv("TS.csv", header=TRUE,row.names = 1)
+group <- read.csv(file = "group_TS.csv",header = F)
+data <- data[, match(group[, 1], colnames(data))]
+write.csv(data, file = "TS.csv",row.names = TRUE)
+lengthData = ncol(data)
+pvalue = apply(data,1,function(x) wilcox.test(x[1:(lengthData/2)],x[(lengthData/2+1):lengthData],paired = T,alternative="two.sided",conf.level=0.95)$p.value)
+#tvalue=apply(data,1,function(x)  wilcox.test(x[2:31],x[32:61],paired = T,alternative="two.sided",conf.level=0.95)$statistic)
+write.csv(pvalue, 'pvalue_TS.csv')
+data1 = data
+data1$suma = rowSums(data1[, 1:(lengthData/2)])
+data1$sumb = rowSums(data1[, (lengthData/2+1):lengthData])
+data1$p = pvalue
+data2 = data1[which(data1$p!='NaN'& data1$p < 0.1),]
+summary(data2$p)
+data3 = subset(data2,select = c(suma,sumb,p))
+data3$sum = data3$suma+data3$sumb
+data3$sub = data3$suma-data3$sumb
+data3$clade_marker_size = "clade_marker_size"
+data3$clade_value = 6*log(data3$sum*10000)
+data3$clade_marker_color = "clade_marker_color"
+data3$color_value = ifelse(data3$sub > 0, '#FCB4AE', '#B3E2CD')
+name <- rownames(data3)
+data3$finalName = sapply(strsplit(name, "\\."), function(x) tail(x, n = 1)) 
+data3$annotation_background_color = "annotation_background_color"
+data3$bkcolor = data3$color_value
+write.csv(data3,"TS.csv",row.names = T)
 
+python graphlan_annotate.py --annot annot_0.txt guide_16s.txt guide_1.xml
+python graphlan.py guide_1.xml step_1_2.pdf --dpi 300 --size 3.5
+ 
+python graphlan_annotate.py --annot annot_1.txt guide_1.xml guide_2.xml
+python graphlan.py guide_2.xml step_2_5.pdf --dpi 300 --size 3.5
+ 
+python graphlan_annotate.py --annot annot_2.txt guide_2.xml guide_3.xml
+python graphlan.py guide_3.xml step_3_2.pdf --dpi 300 --size 3.5
+
+
+##Figure3
 ##co-occurance network 
   library(Hmisc)
   library(psych)
@@ -634,77 +541,57 @@ library(permute)
                 color = "#BEBADA", linewidth = 2, alpha = 1)+
     geom_point(data = p, mapping = aes(x = RM, y = NC), color = "#BEBADA",alpha = 1) 
 
-##
-library(permute)
-library(vegan)
-setwd('D:/')
-OTU_Tax16sCP <-read.csv("OTU_rare_TS.csv", header=TRUE,check.names = F)
-#Domain=aggregate(x=OTU_Tax16sCP[,2:101]/51565,by=list(OTU_Tax16sCP$Domain),FUN='sum')
-#write.csv(Domain, file = " Domain_16S.csv")
-datacol = ncol(OTU_Tax16sCP)-7
-colSums(OTU_Tax16sCP[2:datacol])
-rare = sum(OTU_Tax16sCP[,2])
-Kingdom=aggregate(x=OTU_Tax16sCP[,2:datacol]/rare,by=list(OTU_Tax16sCP$Kingdom),FUN='sum')
-Phylum=aggregate(x=OTU_Tax16sCP[,2:datacol]/rare,by=list(OTU_Tax16sCP$Phylum),FUN='sum')
-colSums(Phylum[,2:datacol])
-all <-  Kingdom
-precount <- nrow(all)
-for (i in 1:nrow(Phylum)) {
-  all[precount+i,] <- Phylum[i,]}
-Class=aggregate(x=OTU_Tax16sCP[,2:datacol]/rare,by=list(OTU_Tax16sCP$Class),FUN='sum')
-precount <- nrow(all)
-for (i in 1:nrow(Class)) {
-  all[precount+i,] <- Class[i,]}
-Order=aggregate(x=OTU_Tax16sCP[,2:datacol]/rare,by=list(OTU_Tax16sCP$Order),FUN='sum')
-precount <- nrow(all)
-for (i in 1:nrow(Order)) {
-  all[precount+i,] <- Order[i,]}
-Family=aggregate(x=OTU_Tax16sCP[,2:datacol]/rare,by=list(OTU_Tax16sCP$Family),FUN='sum')
-precount <- nrow(all)
-for (i in 1:nrow(Family)) {
-  all[precount+i,] <- Family[i,]}
-Genus=aggregate(x=OTU_Tax16sCP[,2:datacol]/rare,by=list(OTU_Tax16sCP$Genus),FUN='sum')
-precount <- nrow(all)
-for (i in 1:nrow(Genus)) {
-  all[precount+i,] <- Genus[i,]}
-write.csv(all, file = "TS.csv",row.names = FALSE)
-colSums(Phylum[,2:datacol])
-colSums(Class[,2:datacol])
-colSums(Order[,2:datacol])
-colSums(Family[,2:datacol])
-colSums(Genus[,2:datacol])
-all$average = rowMeans(all[,2:datacol])
-screen0.0001 <-all
-result <- subset(screen0.0001[which(screen0.0001$average>0.0005),])
-write.csv(result[,1:ncol(result)-1], file = "TS.csv",row.names = FALSE)
-library(reshape2)
-data <-read.csv("TS.csv", header=TRUE,row.names = 1)
-group <- read.csv(file = "group_TS.csv",header = F)
-data <- data[, match(group[, 1], colnames(data))]
-write.csv(data, file = "TS.csv",row.names = TRUE)
-lengthData = ncol(data)
-pvalue = apply(data,1,function(x) wilcox.test(x[1:(lengthData/2)],x[(lengthData/2+1):lengthData],paired = T,alternative="two.sided",conf.level=0.95)$p.value)
-#tvalue=apply(data,1,function(x)  wilcox.test(x[2:31],x[32:61],paired = T,alternative="two.sided",conf.level=0.95)$statistic)
-write.csv(pvalue, 'pvalue_TS.csv')
-data1 = data
-data1$suma = rowSums(data1[, 1:(lengthData/2)])
-data1$sumb = rowSums(data1[, (lengthData/2+1):lengthData])
-data1$p = pvalue
-data2 = data1[which(data1$p!='NaN'& data1$p < 0.1),]
-summary(data2$p)
-data3 = subset(data2,select = c(suma,sumb,p))
-data3$sum = data3$suma+data3$sumb
-data3$sub = data3$suma-data3$sumb
-data3$clade_marker_size = "clade_marker_size"
-data3$clade_value = 6*log(data3$sum*10000)
-data3$clade_marker_color = "clade_marker_color"
-data3$color_value = ifelse(data3$sub > 0, '#FCB4AE', '#B3E2CD')
-name <- rownames(data3)
-data3$finalName = sapply(strsplit(name, "\\."), function(x) tail(x, n = 1)) 
-data3$annotation_background_color = "annotation_background_color"
-data3$bkcolor = data3$color_value
-write.csv(data3,"TS.csv",row.names = T)
 
+##Figure4
+#distance-dacy
+setwd("D:/")
+  site <- read.delim('Rsite.txt', sep = '\t', row.names = 1, check.names = FALSE)
+  site_dis <- geosphere::distm(site[c('longitude', 'laititude')]) 
+  rownames(site_dis) <- rownames(site)
+  colnames(site_dis) <- rownames(site)
+  site_dis <- reshape2::melt(site_dis)
+  site_dis <- subset(site_dis, value != 0)
+  head(site_dis)
+  spe <- read.delim('OTU_rare.txt', sep = '\t', row.names = 1, check.names = FALSE)
+  spe <- data.frame(t(spe))
+  comm_sim <- 1 - as.matrix(vegan::vegdist(spe, method = 'bray'))
+  diag(comm_sim) <- 0 
+  comm_sim[upper.tri(comm_sim)] <- 0  
+  comm_sim <- reshape2::melt(comm_sim)
+  comm_sim <- subset(comm_sim, value != 0)
+  head(comm_sim)
+  comm_dis <- merge(comm_sim, site_dis, by = c('Var1', 'Var2'))
+  names(comm_dis) <- c('site1', 'site2', 'comm_sim', 'site_dis')
+  head(comm_dis)
+  write.table(comm_sim, 'BC similarity.txt', sep = '\t', row.names = FALSE, quote = FALSE)
+  write.table(comm_dis, 'Rsimilarity.txt', sep = '\t', row.names = FALSE, quote = FALSE)
+
+  data <- read.csv('Tsimilarity.csv',header = T)
+  install.packages("ggplot2")
+  library(geosphere)
+  library(ggpubr)
+  library(ggplot2)
+  library(ggpmisc)
+  install
+  site_dis <- geosphere::distm(sample[c('longitude', 'laititude')])
+  data$group <- factor(data$group,levels = c("T","D","S","P","R"))
+  scale_color_manual(values = c("#0073c2","#fa8072","#D5544D","#7aa6dc","#efc000","#ffff00","#27ae60","#317e00"))
+  p1 <- ggplot(data, aes( x = site_dis/1000, y =  comm_sim, color = group)) +
+    geom_point( aes( color = group),size=1.5,alpha=0.5)+ 
+    scale_color_manual(values = c("#80B1D3","#FB8072" ,"#BEBADA","#FFCC00","#8DD3C7"))+
+    labs(x="Distance (km)",y="Bray-Curtis Similarity")+
+    geom_smooth(method = 'lm', formula = y ~ x, se = F,size=1.5) +
+    stat_poly_eq(aes(label=paste(..rr.label..,..p.value.label..,sep = "~~~~")),formula = y~x,parse=T,size=2.5)+
+    theme_bw()+theme(panel.grid.major= element_blank())
+  p2 <- p1+labs(color = "Treat")
+  p2
+  library(dplyr)
+  install.packages("ggpmisc")
+  library(ggpmisc)
+  library(ggpubr)
+  library(gridExtra)
+  data <- read.csv('Tsimilarity.csv',  row.names = 1, check.names = FALSE)
+  fit <- lm(comm_sim~site_dis, data = comm_dis) 
 ##iCAPM
 m(list=ls())
   t0=Sys.time() # to calculate time cost
@@ -819,7 +706,6 @@ m(list=ls())
   # 
   # write.csv(icampcate$Ptuvx,file = "16sRecahpairsample.csv",row.names = FALSE)
   # write.csv(icampcate$Ptx,file = "16sRamongsample.csv",row.names = FALSE)
-
 ##MST
 setwd("E:/DY/MST/Total")
 library(NST)
@@ -880,7 +766,6 @@ p4 = ggplot(data,aes(group,x=factor(group,level=c("T","D","S","P","R")), y=MST.i
         axis.title.x = element_blank(),
         axis.title.y = element_text(colour="black", size = 12))+
   xlab("Treat")+ylab("Modified Stochasticity Ratio(MST) ")+coord_cartesian(ylim = c(0,1))
-
 ##MST
 library(Hmisc)
 library(minpack.lm)
@@ -945,112 +830,7 @@ x <- unit(1:4/5, "npc")
 y <- unit(1:4/5, "npc")
 draw.text(c("centre", "bottom"), 4, 1)
 
-
-The evaluation of soil live prokaryotic abundance and diversity analysis accuracy based on different methods
-##Copies
-library(vegan)
-library(ggplot2)
-library(ggpubr)
-library(ggsci)
-setwd("D:/")
-species<-read.csv("ES_copies.csv",header=T,row.names = 1)
-species$treat<-as.factor(species$treat)
-species$ID<-as.factor(species$ID)
-species$treat <- factor(species$treat,levels = c("T","D","S","P","R"))
-shapiro <- tapply(species$copies, species$treat, shapiro.test)
-shapiro
-bartlett.test(copies ~ treat, data=species)
-library(rstatix)
-res.aov<-anova_test(data = species, dv = copies,   wid= ID, within =  treat)
-get_anova_table(res.aov)
-scaleFUN<-  function(x) sprintf ("%.1f",x)
-#colnames(species)<-c("Row.names","species","type")
-species$group<-c(1:8,1:8,1:8,1:8,1:8)
-my_comparisons <- list(c("T", "D"), c("T", "P"), c("T", "R"), c("D", "S"), c("D", "R"),
-                       c("P", "S"), c("P", "R"), c("S", "R"))
-p4 = ggplot(species,aes(fill = treat,x=factor(treat,level=c("T","D","S","P","R")), y=copies))+###abundance： y=species
-  stat_boxplot(geom="errorbar",width=0.15)+
-  geom_boxplot(alpha=0.7,aes(fill=treat))+
-  geom_line(aes(group=group) ,colour="#9C9C9C",lwd=0.2)+
-  geom_point(size = 0.5)+
-  scale_y_continuous(name="Prokaryotic Copies(lg)",labels=scaleFUN)+
-  scale_x_discrete(name="Nucleic acid extraction method")+
-  scale_fill_manual(values=c("#80B1D3","#FB8072" ,"#BEBADA","#FFFFB3","#8DD3C7"))+
-  theme_bw()+
-  theme(legend.position='none')+
-  theme(panel.background = element_rect(fill = "white", colour = "black"), 
-        panel.grid = element_blank(),
-        panel.border = element_blank(),
-        text = element_text(colour="black",size=14),
-        axis.title = element_text(colour="black",face="bold"),
-        axis.text=element_text(colour="black",size=14),
-        axis.title.x = element_blank(),
-        axis.title.y = element_text(colour="black", size = 14))+
-  stat_compare_means(comparisons=my_comparisons,  label ="p.signif",method = "t.test")
-p4
-ggsave('Copies.pdf', p4, width = 5, height = 5)
-
-##removal efficiency
-library(ggplot2)
-library(RColorBrewer)
-library(ggsci)
-library(ggpubr)
-install.packages("ggbreak")
-library(ggbreak)
-setwd("C:/Users/biubiuyy/Desktop/test")
-aa<-read.csv("test_otu.csv",row.names = 1)
-df<-aa[21:220,1:3]
-#df<- as.data.frame(scale(df))
-Group<-data.frame(c(rep(c(4:8,4:8,4:8,4:8),10)),c(rep(c(1),50)))
-colnames(Group)<-c("pH","Group")
-df<-cbind(df,Group)
-write.csv(df,file = "test.csv")
-df <- read.csv("test_site2.csv",row.names = 1)
-df$pH<-as.factor(df$pH)
-df$Sample3<-"Box plot"
-p1=ggplot(df, aes(x=pH, y=Sample2,color=pH))+
-  stat_boxplot(geom="errorbar",position=position_dodge(width=0.2),width=0.3,size=1)+
-  geom_boxplot(aes(),notch = F,size=0.7)+
-  geom_jitter(size = 2.5,alpha = 0.6,width = 0.2)+ 
-  theme_bw()+scale_color_npg()+scale_fill_npg()+
-  theme(axis.text=element_text(colour='black',size=9))+
-  labs(x="Metabolic", y="Growth", color = "pH",fill = "pH")+
-  facet_grid( ~Sample3, drop=TRUE,scale="free", space="free_x")+
-  theme(strip.background = element_rect(fill=c("white")))+
-  theme(strip.text = element_text(size = 12,face = 'bold',colour = "gray2"))+
-  theme(axis.text=element_text(colour='black',size=11))
-p1
-plot_data2<-df
-mean_df<-aggregate(plot_data2[,1:2],by=list(plot_data2[,4]),FUN=mean)
-rownames(mean_df)<-mean_df[,1]
-sd_df<-aggregate(plot_data2[,1:2],by=list(plot_data2[,4]),FUN=sd)
-rownames(sd_df)<-sd_df[,1]
-sd_df<-sd_df[,-1]
-se_df<-sd_df/sqrt(16) 
-se<-as.data.frame(se_df)
-plot_data1<-cbind(mean_df,se)
-colnames(plot_data1)<-c("pH","Sample1","Sample2","se1","se2")
-#barplot
-df$Sample3<-"Bar plot"
-#barplot
-p2 <- ggplot(df, aes(x = pH, y = Sample2, color = pH)) +
-  geom_bar(data = plot_data1, mapping = aes(x = pH, y = Sample2, fill = pH), size = 1.03, position = "dodge", stat = "identity", width = 0.7, color = "black") +
-  scale_fill_manual(values = c("#FB8072", "#FFFFB3", "#BEBADA")) + 
-  scale_color_manual(values = c("#FB8072", "#FFFFB3", "#BEBADA")) + 
-  geom_errorbar(data = plot_data1, mapping = aes(x = pH, ymin = Sample2 - se2, ymax = Sample2 + se2), width = 0.3, size = 0.8, color = "black") +
-  geom_jitter(size = 2.5, alpha = 0.6, width = 0.2) + 
-  theme_bw() +
-  theme(axis.text = element_text(colour = 'black', size = 9)) +
-  labs(x = "Metabolic", y = "", color = "pH", fill = "pH") +
-  theme(strip.background = element_rect(fill = c("white"))) +
-  theme(strip.text = element_text(size = 12, face = 'bold', colour = "gray2")) +
-  theme(axis.text = element_text(colour = 'black', size = 11)) +
-  guides(color = FALSE, fill = FALSE) +
-  coord_cartesian(ylim = c(75, 105))
-#scale_y_break(c(5,75),scales=2,space=0,expand = c(0,0))+
-p2
-ggsave('site2.pdf', p2, width = 6, height = 5)
-
+##Figure5
 ##relative abundance
 library(reshape2)
 library(ggplot2)
@@ -1194,3 +974,109 @@ p4 = ggplot(species,aes(fill = type,x=factor(type,level=c("S/T","D/T","P/T","R/T
 p4<-p4+scale_fill_brewer(palette = "Set2") 
 p4
 ggsave('Total.pdf', p4, width = 6, height = 5)
+
+##Figure6
+The evaluation of soil live prokaryotic abundance and diversity analysis accuracy based on different methods
+##Copies
+library(vegan)
+library(ggplot2)
+library(ggpubr)
+library(ggsci)
+setwd("D:/")
+species<-read.csv("ES_copies.csv",header=T,row.names = 1)
+species$treat<-as.factor(species$treat)
+species$ID<-as.factor(species$ID)
+species$treat <- factor(species$treat,levels = c("T","D","S","P","R"))
+shapiro <- tapply(species$copies, species$treat, shapiro.test)
+shapiro
+bartlett.test(copies ~ treat, data=species)
+library(rstatix)
+res.aov<-anova_test(data = species, dv = copies,   wid= ID, within =  treat)
+get_anova_table(res.aov)
+scaleFUN<-  function(x) sprintf ("%.1f",x)
+#colnames(species)<-c("Row.names","species","type")
+species$group<-c(1:8,1:8,1:8,1:8,1:8)
+my_comparisons <- list(c("T", "D"), c("T", "P"), c("T", "R"), c("D", "S"), c("D", "R"),
+                       c("P", "S"), c("P", "R"), c("S", "R"))
+p4 = ggplot(species,aes(fill = treat,x=factor(treat,level=c("T","D","S","P","R")), y=copies))+###abundance： y=species
+  stat_boxplot(geom="errorbar",width=0.15)+
+  geom_boxplot(alpha=0.7,aes(fill=treat))+
+  geom_line(aes(group=group) ,colour="#9C9C9C",lwd=0.2)+
+  geom_point(size = 0.5)+
+  scale_y_continuous(name="Prokaryotic Copies(lg)",labels=scaleFUN)+
+  scale_x_discrete(name="Nucleic acid extraction method")+
+  scale_fill_manual(values=c("#80B1D3","#FB8072" ,"#BEBADA","#FFFFB3","#8DD3C7"))+
+  theme_bw()+
+  theme(legend.position='none')+
+  theme(panel.background = element_rect(fill = "white", colour = "black"), 
+        panel.grid = element_blank(),
+        panel.border = element_blank(),
+        text = element_text(colour="black",size=14),
+        axis.title = element_text(colour="black",face="bold"),
+        axis.text=element_text(colour="black",size=14),
+        axis.title.x = element_blank(),
+        axis.title.y = element_text(colour="black", size = 14))+
+  stat_compare_means(comparisons=my_comparisons,  label ="p.signif",method = "t.test")
+p4
+ggsave('Copies.pdf', p4, width = 5, height = 5)
+
+##removal efficiency
+library(ggplot2)
+library(RColorBrewer)
+library(ggsci)
+library(ggpubr)
+install.packages("ggbreak")
+library(ggbreak)
+setwd("C:/Users/biubiuyy/Desktop/test")
+aa<-read.csv("test_otu.csv",row.names = 1)
+df<-aa[21:220,1:3]
+#df<- as.data.frame(scale(df))
+Group<-data.frame(c(rep(c(4:8,4:8,4:8,4:8),10)),c(rep(c(1),50)))
+colnames(Group)<-c("pH","Group")
+df<-cbind(df,Group)
+write.csv(df,file = "test.csv")
+df <- read.csv("test_site2.csv",row.names = 1)
+df$pH<-as.factor(df$pH)
+df$Sample3<-"Box plot"
+p1=ggplot(df, aes(x=pH, y=Sample2,color=pH))+
+  stat_boxplot(geom="errorbar",position=position_dodge(width=0.2),width=0.3,size=1)+
+  geom_boxplot(aes(),notch = F,size=0.7)+
+  geom_jitter(size = 2.5,alpha = 0.6,width = 0.2)+ 
+  theme_bw()+scale_color_npg()+scale_fill_npg()+
+  theme(axis.text=element_text(colour='black',size=9))+
+  labs(x="Metabolic", y="Growth", color = "pH",fill = "pH")+
+  facet_grid( ~Sample3, drop=TRUE,scale="free", space="free_x")+
+  theme(strip.background = element_rect(fill=c("white")))+
+  theme(strip.text = element_text(size = 12,face = 'bold',colour = "gray2"))+
+  theme(axis.text=element_text(colour='black',size=11))
+p1
+plot_data2<-df
+mean_df<-aggregate(plot_data2[,1:2],by=list(plot_data2[,4]),FUN=mean)
+rownames(mean_df)<-mean_df[,1]
+sd_df<-aggregate(plot_data2[,1:2],by=list(plot_data2[,4]),FUN=sd)
+rownames(sd_df)<-sd_df[,1]
+sd_df<-sd_df[,-1]
+se_df<-sd_df/sqrt(16) 
+se<-as.data.frame(se_df)
+plot_data1<-cbind(mean_df,se)
+colnames(plot_data1)<-c("pH","Sample1","Sample2","se1","se2")
+#barplot
+df$Sample3<-"Bar plot"
+#barplot
+p2 <- ggplot(df, aes(x = pH, y = Sample2, color = pH)) +
+  geom_bar(data = plot_data1, mapping = aes(x = pH, y = Sample2, fill = pH), size = 1.03, position = "dodge", stat = "identity", width = 0.7, color = "black") +
+  scale_fill_manual(values = c("#FB8072", "#FFFFB3", "#BEBADA")) + 
+  scale_color_manual(values = c("#FB8072", "#FFFFB3", "#BEBADA")) + 
+  geom_errorbar(data = plot_data1, mapping = aes(x = pH, ymin = Sample2 - se2, ymax = Sample2 + se2), width = 0.3, size = 0.8, color = "black") +
+  geom_jitter(size = 2.5, alpha = 0.6, width = 0.2) + 
+  theme_bw() +
+  theme(axis.text = element_text(colour = 'black', size = 9)) +
+  labs(x = "Metabolic", y = "", color = "pH", fill = "pH") +
+  theme(strip.background = element_rect(fill = c("white"))) +
+  theme(strip.text = element_text(size = 12, face = 'bold', colour = "gray2")) +
+  theme(axis.text = element_text(colour = 'black', size = 11)) +
+  guides(color = FALSE, fill = FALSE) +
+  coord_cartesian(ylim = c(75, 105))
+#scale_y_break(c(5,75),scales=2,space=0,expand = c(0,0))+
+p2
+ggsave('site2.pdf', p2, width = 6, height = 5)
