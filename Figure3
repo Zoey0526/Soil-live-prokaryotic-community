@@ -1,0 +1,248 @@
+##Figure3
+##co-occurance network 
+  library(Hmisc)
+  library(psych)
+  library(igraph)
+  library(Formula)
+  setwd("D:/")
+  otu <- read.csv('otuBF_781.csv', row.name = 1, check.names = FALSE)
+  otu1 <- otu
+  otu1[otu1>0] <- 1
+  otu <- otu[which(rowSums(otu1) >= 25 ),]
+  #write.table(otu, 'remove_60.txt', sep = '\t', row.names = TRUE)
+  rowsum <- as.data.frame(rowSums(otu))
+  sum <- colSums(rowsum)
+  otu$RA <- rowsum/sum
+  #otu <- otu[which(otu$RA>0.0001),]
+  otu <- subset(otu[which(otu$RA>0.0001),], select = -RA)
+  otu <- t(otu)
+  otu <- scale(otu)
+  rcorr_otu <- rcorr(as.matrix(otu), type = 'spearman')
+  #corr_otu <- corr.test(otu, method = 'spearman')
+  #rcorr_otu
+  p <- rcorr_otu$P
+  #p <- p.adjust(p, method = 'BH')
+  r <- rcorr_otu$r
+  r[which(r < 0)]
+  r[abs(r) < 0.8] <- 0
+  #write.table(r, 'corr_r_0.6.txt', sep = '\t', row.names = TRUE)
+  p[p>=0.05] <- -1
+  p[p<0.05 & p>=0] <- 1
+  p[p==-1] <- 0
+  z <- r * p
+  z[which(z < 0)]
+  #z <- na.omit(z)
+  # write.table(data.frame(z1, check.names = FALSE), 'z1.txt', col.names = NA, sep = '\t', quote = FALSE)
+  g <- graph.adjacency(z, weighted = TRUE, mode = 'undirected', diag = FALSE)
+  g <- delete.vertices(g, names(degree(g)[degree(g) == 0]))
+  names(degree(g)[degree(g) == 0])
+  E(g)$correlation <- E(g)$weight
+  E(g)$weight <- abs(E(g)$weight)
+  taxonomy <- read.csv('metadataBF.CSV', row.name = 1, check.names = FALSE)
+  taxonomy <- taxonomy[as.character(V(g)$name),]#将所有g中有的otu的信息提取出来
+  V(g)$Kingdom <- taxonomy$Kingdom
+  V(g)$Phylum <- taxonomy$Phylum
+  V(g)$Class <- taxonomy$Class
+  V(g)$Order <- taxonomy$Order
+  V(g)$Family <- taxonomy$Family
+  V(g)$Genus <- taxonomy$Genus
+  V(g)$Species <- taxonomy$Species
+  edge <- data.frame(as_edgelist(g))
+  df <- as.data.frame(E(g)$correlation)
+  df[df>0] <- 1
+  df[df<0] <- -1
+  colnames(df) <- c('cor')
+  edge_list <- data.frame(
+    source = edge[[1]],
+    target = edge[[2]],
+    weight = E(g)$weight,
+    correlation = E(g)$correlation,
+    cor = df )
+  head(edge_list)
+  write.table(edge_list, 'R_edge_screen0.0001_r0.8p0.05.csv', sep = ',', row.names = FALSE, quote = FALSE)##写出边列表
+  node <- data.frame(
+    id = names(V(g)),
+    kingdom =V(g)$Kingdom,
+    phylum =V(g)$Phylum,
+    class =V(g)$Class,
+    order =V(g)$Order,
+    family =V(g)$Family,
+    genus =V(g)$Genus,
+    species =V(g)$Species )
+  write.table(node, 'R_node_screen0.0001_r0.8p0.05.csv', sep = ',', row.names = FALSE, quote = FALSE)
+  -----------------------------------------------
+  # network property
+  #  The size of the graph (number of edges)
+  num.edges = length(E(g)) # length(curve_multiple(igraph))
+  num.edges
+  #  Order (number of vertices) of a graph
+  num.vertices = length(V(g))# length(diversity(igraph, weights = NULL, vids = V(igraph)))
+  num.vertices
+  # connectance = edge_density(g,loops=FALSE)
+  # Average degree
+  average.degree = mean(igraph::degree(g))
+  # Average path length
+  average.path.length = average.path.length(g) 
+  # Diameter
+  diameter = diameter(g, directed = FALSE, unconnected = TRUE, weights = NULL)
+  #  edge connectivity / group adhesion
+  edge.connectivity = edge_connectivity(g)
+  edge.connectivity
+  # Clustering coefficient
+  clustering.coefficient = transitivity(g) 
+  clustering.coefficient
+  no.clusters = no.clusters(g)
+  no.clusters
+  # Betweenness centralization
+  centralization.betweenness = centralization.betweenness(g)$centralization 
+  centralization.betweenness
+  # Degree centralization
+  centralization.degree = centralization.degree(g)$centralization
+  centralization.degree
+  network_property <-c(num.edges=num.edges,num.vertices=num.vertices,connectance=connectance,
+                       average.degree=average.degree,average.path.length=average.path.length,
+                       diameter=diameter,edge.connectivity=edge.connectivity,clustering.coefficient=clustering.coefficient,
+                       no.clusters=no.clusters,centralization.betweenness=centralization.betweenness,
+                       centralization.degree=centralization.degree)
+  network_property <- data.frame(network_property)
+  write.csv(network_property, 'R_network_property.csv', row.names = T)
+
+##robustness
+ library(igraph)
+  library(ggplot2)
+  #install.packages("rsq")
+  library(rsq)
+  setwd("D:\")
+  record <- c()
+  record <- cbind(record,"D")
+  result<-c()
+  a=read.csv("D_edge_screen0.0001_r0.8p0.05.csv",header = TRUE) 
+  a$source=as.factor(a$source)
+  a$target=as.factor(a$target)
+  b=a[,c(1:2)]
+  b=t(b)
+  b=t(b)
+  ig=graph_from_edgelist(b,directed=FALSE)
+  natcon <- function(ig) {
+    N   <- vcount(ig)
+    adj <- get.adjacency(ig)
+    evals <- eigen(adj)$value
+    nc  <- log(mean(exp(evals)))
+    nc / (N - log(N))
+  }
+  nc.attack <- function(ig) {
+    hubord <- order(rank(betweenness(ig)), rank(degree(ig)), decreasing=TRUE)
+    sapply(1:round(vcount(ig)*.8), function(i) {
+      ind <- hubord[1:i]
+      tmp <- delete_vertices(ig, V(ig)$name[ind])
+      natcon(tmp)
+    }) }
+  nc<- nc.attack(ig)
+  nc
+  write.csv(nc,"D-nc.csv")
+  p <- read.csv("D-nc.csv")
+  colnames(p)[2] <-"NC"
+  p$RM <- p$X/vcount(ig)
+  ncmod <- glm(NC~RM,data = p)
+  summary(ncmod)
+  record <- cbind(record,ncmod$coefficients[2])
+  record <- cbind(record,rsq(ncmod))
+  p5 <- p4+
+    geom_abline(slope = ncmod$coefficients[2], intercept = ncmod$coefficients[1], 
+                color = "#8DD3C7", linewidth = 2, alpha = 1)+
+    geom_point(data = p, mapping = aes(x = RM, y = NC), color = "#8DD3C7",alpha = 1) +
+    ylim (0, 0.06) +
+    theme(panel.background = element_rect(fill = "transparent", colour = "black"))+ 
+    theme(axis.text.y  = element_text(size = 20,color="black"))+
+    theme(axis.title.y = element_text(size = 20, color="black"))+
+    theme(axis.title.x = element_text(size = 20, color="black"))+
+    theme(legend.text=element_text(size=20, color="black"))+#图例字体大小
+    theme(axis.text.x = element_text(size = 20,color="black")) 
+  p4 <- p3+
+    geom_abline(slope = ncmod$coefficients[2], intercept = ncmod$coefficients[1], 
+                color = "#FFCC00", linewidth = 2, alpha = 1)+
+    geom_point(data = p, mapping = aes(x = RM, y = NC), color = "#FFCC00",alpha = 1) +
+    ylim (0, 0.06) +
+    theme(panel.background = element_rect(fill = "transparent", colour = "black"))+
+    theme(axis.text.y  = element_text(size = 20,color="black"))+
+    theme(axis.title.y = element_text(size = 20, color="black"))+
+    theme(axis.title.x = element_text(size = 20, color="black"))+
+    theme(legend.text=element_text(size=20, color="black"))+
+    theme(axis.text.x = element_text(size = 20,color="black")) 
+  p3 <- p2+ 
+    geom_abline(slope = ncmod$coefficients[2], intercept = ncmod$coefficients[1], 
+                color = "#BEBADA", linewidth = 2, alpha = 1)+
+    geom_point(data = p, mapping = aes(x = RM, y = NC), color = "#BEBADA",alpha = 1) +
+    ylim (0, 0.06) +
+    theme(panel.background = element_rect(fill = "transparent", colour = "black"))+
+    theme(axis.text.y  = element_text(size = 20,color="black"))+
+    theme(axis.title.y = element_text(size = 20, color="black"))+
+    theme(axis.title.x = element_text(size = 20, color="black"))+
+    theme(legend.text=element_text(size=20, color="black"))+
+    theme(axis.text.x = element_text(size = 20,color="black")) 
+  p1 <- ggplot() + 
+    geom_abline(slope = ncmod$coefficients[2], intercept = ncmod$coefficients[1], 
+                color = "#80B1D3", linewidth = 2, alpha = 1)+
+    geom_point(data = p, mapping = aes(x = RM, y = NC), color = "#80B1D3",alpha = 1) +
+    theme_bw()
+  p1
+  write.csv(result,file='D_slope&r2.csv')
+  result<-rbind(result,record)
+  record <- c()
+  record <- cbind(record,"D")
+  a=read.csv("D_edge_screen0.0001_r0.8p0.05.csv",header = TRUE) 
+  a$source=as.factor(a$source)
+  a$target=as.factor(a$target)
+  b=a[,c(1:2)]
+  b=t(b)
+  b=t(b)
+  ig=graph_from_edgelist(b,directed=FALSE)
+  natcon <- function(ig) {
+    N   <- vcount(ig)
+    adj <- get.adjacency(ig)
+    evals <- eigen(adj)$value
+    nc  <- log(mean(exp(evals)))
+    nc / (N - log(N))
+  }
+  nc.attack <- function(ig) {
+    hubord <- order(rank(betweenness(ig)), rank(degree(ig)), decreasing=TRUE)
+    sapply(1:round(vcount(ig)*.8), function(i) {
+      ind <- hubord[1:i]
+      tmp <- delete_vertices(ig, V(ig)$name[ind])
+      natcon(tmp)
+    }) }
+  nc<- nc.attack(ig)
+  nc
+  write.csv(nc,"DNase-nc.csv")
+  p <- read.csv("DNase-nc.csv")
+  colnames(p)[2] <-"NC"
+  p$RM <- p$X/vcount(ig)
+  ncmod <- glm(NC~RM,data = p)
+  summary(ncmod)
+  record <- cbind(record,ncmod$coefficients[2])
+  record <- cbind(record,rsq(ncmod))
+  p2 <- p1 + 
+    geom_abline(slope = ncmod$coefficients[2], intercept = ncmod$coefficients[1], 
+                color = "#FB8072", linewidth = 2, alpha = 1)+
+    geom_point(data = p, mapping = aes(x = RM, y = NC), color = "#FB8072",alpha = 1) +
+    ylim (0, 0.06) +
+    theme(panel.background = element_rect(fill = "transparent", colour = "black"))+ 
+    theme(axis.text.y  = element_text(size = 20,color="black"))+
+    theme(axis.title.y = element_text(size = 20, color="black"))+
+    theme(axis.title.x = element_text(size = 20, color="black"))+
+    theme(legend.text=element_text(size=20, color="black"))+
+    theme(axis.text.x = element_text(size = 20,color="black"))
+  p2
+  result<-rbind(result,record)
+  record <- c()
+  record <- cbind(record,"D")
+  p2
+  ggsave("XXX.pdf",p5,  width = 8, height = 5)
+  result
+  write.csv(result,file='S_slope&r2.csv')
+  p <- p5+theme(panel.grid = element_blank())
+  p
+  p5 <- p4 + 
+    geom_abline(slope = ncmod$coefficients[2], intercept = ncmod$coefficients[1], 
+                color = "#BEBADA", linewidth = 2, alpha = 1)+
+    geom_point(data = p, mapping = aes(x = RM, y = NC), color = "#BEBADA",alpha = 1) 
