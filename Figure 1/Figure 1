@@ -1,1 +1,208 @@
+##Figure 1
+library(vegan)
+library(permute)
+library(lattice)
+setwd("D:/")
+Bfn1<-read.csv("otutab_its.csv", header=TRUE, row.names=1)
+Bfn<-t(Bfn1)
+S1 <- specnumber(Bfn)
+(raremax1 <- min(rowSums(Bfn)))
+ newOTU <- rrarefy(Bfn, raremax1)
+newOTU1 = t(newOTU)
+write.csv(newOTU1,file='ES_otu_delete_rare.csv')
+##diversity
+##shannon
+library(vegan)
+library(ggplot2)
+library(ggpubr)
+library(ggsci)
+setwd("D:/")
+species<-read.csv("alpha_16S.csv",header=T,row.names = 1)
+species$treat<-as.factor(species$treat)
+species$ID<-as.factor(species$ID)
+species$treat <- factor(species$treat,levels = c("T","D","S","P","R"))
+shapiro <- tapply(species$shannon, species$treat, shapiro.test)
+shapiro
+bartlett.test(shannon ~ treat, data=species)
+library(rstatix)
+res.aov<-anova_test(data = species, dv = evenness,   wid= ID, within =  treat)
+get_anova_table(res.aov)
+####################################################################
+#####################################################################
+scaleFUN<-  function(x) sprintf ("%.1f",x)
+#colnames(species)<-c("Row.names","species","type")
+species$group<-c(1:52,1:52,1:52,1:52,1:52)
 
+my_comparisons <- list(c("T", "D"),  c("T", "S")  
+                       , c("T", "R"))
+my_comparisons <- list(c("T", "D"),  c("T", "S"),  c("T", "P")
+                       , c("T", "R"),  c("D", "S"),  c("D", "P")
+                       ,  c("D", "R"),  c("S", "P"),  c("S", "R")
+                       ,  c("P", "R"))
+p4 = ggplot(species,aes(fill = treat,x=factor(treat,level=c("T","D","S","P","R")), y=shannon))+###abundance： y=species
+  stat_boxplot(geom="errorbar",width=0.15)+
+  geom_boxplot(alpha=0.7,aes(fill=treat))+
+  geom_line(aes(group=group) ,colour="#9C9C9C",lwd=0.2)+
+  geom_point(size = 0.5)+
+  scale_y_continuous(name="Prokaryotic Shannon",labels=scaleFUN)+
+  theme_bw()+
+  theme(legend.position='none')+
+  theme(panel.background = element_rect(fill = "white", colour = "black"), 
+        panel.grid = element_blank(),
+        panel.border = element_blank(),
+        text = element_text(colour="black",size=14),
+        axis.title = element_text(colour="black",face="bold"),
+        axis.text=element_text(colour="black",size=14),
+        axis.title.x = element_blank(),
+        axis.title.y = element_text(colour="black", size = 14))+
+        #xlab("")+ylab("Prokaryotic richness(103)")+ylim(2,12)+
+   #scale_x_discrete(labels = c("D1","D3","D6","D12","D24","D48"))+ 
+  stat_compare_means(comparisons=my_comparisons,label ="p.signif",step_increase = 0.1,map_signif_level = T,test = wilcox.test,paired = TRUE) # Add pairwise 
+   #stat_compare_means(label.y = 9,label.x = 1.5,size=6) # Add global p-value
+
+p4<-p4+scale_fill_brewer(palette = "Set3",direction = -1) ##palette = "Blues"
+p4
+ggsave('shannon.pdf', p4, width = 4, height = 4)
+
+mod1 = aov(shannon ~ treat, data= species)
+summary(mod1)
+re = LSD.test(mod1,"treat",alpha = 0.05)
+re1 = re$groups
+re1
+print(re)
+##richness
+library(vegan)
+library(ggplot2)
+library(ggpubr)
+library(ggsci)
+setwd("E:\")
+species<-read.csv("alpha_16S.csv",header=T,row.names = 1)
+species$treat<-as.factor(species$treat)
+species$ID<-as.factor(species$ID)
+species$treat <- factor(species$treat,levels = c("T","D","S","P","R"))
+shapiro <- tapply(species$richness, species$treat, shapiro.test)
+shapiro
+bartlett.test(richness ~ treat, data=species)
+library(rstatix)
+res.aov<-anova_test(data = species, dv = richness,   wid= ID, within =  treat)
+get_anova_table(res.aov)
+scaleFUN<-  function(x) sprintf ("%.1f",x)
+#colnames(species)<-c("Row.names","species","type")
+species$group<-c(1:52,1:52,1:52,1:52,1:52)
+my_comparisons <- list(c("T", "D")
+                       , c("T", "R"),    c("D", "P"))
+p4 = ggplot(species,aes(fill = treat,x=factor(treat,level=c("T","D","S","P","R")), y=richness/1000))+###abundance： y=species
+  stat_boxplot(geom="errorbar",width=0.15)+
+  geom_boxplot(alpha=0.7,aes(fill=treat))+
+  geom_line(aes(group=group) ,colour="#9C9C9C",lwd=0.2)+
+  geom_point(size = 0.5)+
+  scale_y_continuous(name="Prokaryotic Richness(103)",labels=scaleFUN)+
+  scale_x_discrete(name="treat")+
+  theme_bw()+
+  theme(legend.position='none')+
+  theme(panel.background = element_rect(fill = "white", colour = "black"),
+        panel.grid = element_blank(),
+        panel.border = element_blank(),
+        text = element_text(colour="black",size=14),
+        axis.title = element_text(colour="black",face="bold"),
+        axis.text=element_text(colour="black",size=14),
+        axis.title.x = element_blank(),
+        axis.title.y = element_text(colour="black", size = 14))+
+  #xlab("")+ylab("Prokaryotic richness(103)")+ylim(2,12)+
+  #scale_x_discrete(labels = c("D1","D3","D6","D12","D24","D48"))+
+  stat_compare_means(comparisons=my_comparisons,label ="p.signif",step_increase = 0.1,map_signif_level = T,test = wilcox.test,paired = TRUE) # Add pairwise 
+  #stat_compare_means(label.y = 10,label.x = 1.5,size=6) # Add global p-value
+
+p4<-p4+scale_fill_brewer(palette = "Set3",direction = -1)
+p4
+ggsave('richness.pdf', p4, width = 4, height = 4)
+##Copies
+library(vegan)
+library(ggplot2)
+library(ggpubr)
+library(ggsci)
+setwd("D:/")
+species<-read.csv("Copies.csv",header=T,row.names = 1)
+species$treat<-as.factor(species$treat)
+species$ID<-as.factor(species$ID)
+species$treat <- factor(species$treat,levels = c("T","D","S","P","R"))
+shapiro <- tapply(species$copies, species$treat, shapiro.test)
+shapiro
+bartlett.test(copies ~ treat, data=species)
+library(rstatix)
+res.aov<-anova_test(data = species, dv = copies,   wid= ID, within =  treat)
+get_anova_table(res.aov)
+scaleFUN<-  function(x) sprintf ("%.1f",x)
+#colnames(species)<-c("Row.names","species","type")
+species$group<-c(1:52,1:52,1:52,1:52,1:52)
+my_comparisons <- list(c("T", "D"),  c("T", "P")
+                       ,  c("D", "S"))
+p4 = ggplot(species,aes(fill = treat,x=factor(treat,level=c("T","D","S","P","R")), y=copies))+###abundance： y=species
+  stat_boxplot(geom="errorbar",width=0.15)+
+  geom_boxplot(alpha=0.7,aes(fill=treat))+
+  geom_line(aes(group=group) ,colour="#9C9C9C",lwd=0.2)+
+  geom_point(size = 0.5)+
+  scale_y_continuous(name="Prokaryotic Copies(lg)",labels=scaleFUN)+
+  scale_x_discrete(name="Nucleic acid extraction method")+
+  theme_bw()+
+  theme(legend.position='none')+
+  theme(panel.background = element_rect(fill = "white", colour = "black"),
+        panel.grid = element_blank(),
+        panel.border = element_blank(),
+        text = element_text(colour="black",size=14),
+        axis.title = element_text(colour="black",face="bold"),
+        axis.text=element_text(colour="black",size=14),
+        axis.title.x = element_blank(),
+        axis.title.y = element_text(colour="black", size = 14))+
+  #xlab("")+ylab("Prokaryotic richness(103)")+ylim(2,12)+
+  #scale_x_discrete(labels = c("D1","D3","D6","D12","D24","D48"))+
+  stat_compare_means(comparisons=my_comparisons,label ="p.signif",step_increase = 0.1,map_signif_level = T,test = wilcox.test,paired = TRUE) # Add pairwise 
+  #stat_compare_means(label.y = 10,label.x = 1.5,size=6) # Add global p-value
+
+p4<-p4+scale_fill_brewer(palette = "Set3",direction = -1) 
+p4
+ggsave('copies.pdf', p4, width = 4, height = 4)
+mod1 = aov(richness ~ treat, data= species)
+summary(mod1)
+re = LSD.test(mod1,"treat",alpha = 0.05)
+re1 = re$groups
+re1
+print(re)
+setwd("D:")
+  species<-read.csv("BC similarity.csv",header=T)
+  species$type<-as.factor(species$type)
+  species$ID<-as.factor(species$ID)
+  shapiro <- tapply(species$value, species$type, shapiro.test)
+  shapiro
+  bartlett.test(value ~ type, data=species)
+  library(rstatix)
+  res.aov<-anova_test(data = species, dv = value,   wid= ID, within =  type)
+  get_anova_table(res.aov)
+  scaleFUN<-  function(x) sprintf ("%.1f",x)
+  #colnames(species)<-c("Row.names","species","type")
+  species$group<-c(1:52,1:52,1:52,1:52)
+  
+  p4 = ggplot(species,aes(fill = type,x=factor(type,level=c("S/T","D/T","P/T","R/T")), y=value))+abundance： y=species
+    stat_boxplot(geom="errorbar",width=0.15)+
+    geom_boxplot(alpha=0.7,aes(fill=type))+
+    geom_line(aes(group=group) ,colour="#9C9C9C",lwd=0.2)+
+    geom_point(size = 0.5)+
+    scale_y_continuous(name="Bray-Curtis Similarity",labels=scaleFUN)+
+    scale_x_discrete(name="Treat")+
+    theme_bw()+
+    theme(legend.position='none')+
+    theme(panel.background = element_rect(fill = "white", colour = "black"), 
+          panel.grid = element_blank(),
+          panel.border = element_blank(),
+          text = element_text(colour="black",size=14),
+          axis.title = element_text(colour="black",face="bold"),
+          axis.text=element_text(colour="black",size=14),
+          axis.title.x = element_blank(),
+          axis.title.y = element_text(colour="black", size = 12))+
+    xlab("Treat")+ylab("Bray-Curtis similarity ")+coord_cartesian(ylim = c(0.15,0.8))+
+    #stat_compare_means(comparisons=my_comparisons,label ="p.signif",step_increase = 0.1,map_signif_level = T,test = wilcox.test,paired = TRUE) # Add pairwise 
+    stat_compare_means(label.y = 0.58,label.x = 3,size=5) # Add global p-value
+  
+  p4<-p4+scale_fill_brewer(palette = "Dark2") ##palette = "Blues"
+  p4
+  ggsave('Total.pdf', p4, width = 7, height = 5)
