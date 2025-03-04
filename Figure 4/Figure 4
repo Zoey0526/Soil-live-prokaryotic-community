@@ -1,1 +1,223 @@
+#distance-dacy
+setwd("D:/")
+  site <- read.delim('Rsite.txt', sep = '\t', row.names = 1, check.names = FALSE)
+  site_dis <- geosphere::distm(site[c('longitude', 'laititude')]) 
+  rownames(site_dis) <- rownames(site)
+  colnames(site_dis) <- rownames(site)
+  site_dis <- reshape2::melt(site_dis)
+  site_dis <- subset(site_dis, value != 0)
+  head(site_dis)
+  spe <- read.delim('OTU_rare.txt', sep = '\t', row.names = 1, check.names = FALSE)
+  spe <- data.frame(t(spe))
+  comm_sim <- 1 - as.matrix(vegan::vegdist(spe, method = 'bray'))
+  diag(comm_sim) <- 0 
+  comm_sim[upper.tri(comm_sim)] <- 0  
+  comm_sim <- reshape2::melt(comm_sim)
+  comm_sim <- subset(comm_sim, value != 0)
+  head(comm_sim)
+  comm_dis <- merge(comm_sim, site_dis, by = c('Var1', 'Var2'))
+  names(comm_dis) <- c('site1', 'site2', 'comm_sim', 'site_dis')
+  head(comm_dis)
+  write.table(comm_sim, 'BC similarity.txt', sep = '\t', row.names = FALSE, quote = FALSE)
+  write.table(comm_dis, 'Rsimilarity.txt', sep = '\t', row.names = FALSE, quote = FALSE)
 
+  data <- read.csv('Tsimilarity.csv',header = T)
+  install.packages("ggplot2")
+  library(geosphere)
+  library(ggpubr)
+  library(ggplot2)
+  library(ggpmisc)
+  install
+  site_dis <- geosphere::distm(sample[c('longitude', 'laititude')])
+  data$group <- factor(data$group,levels = c("T","D","S","P","R"))
+  scale_color_manual(values = c("#0073c2","#fa8072","#D5544D","#7aa6dc","#efc000","#ffff00","#27ae60","#317e00"))
+  p1 <- ggplot(data, aes( x = site_dis/1000, y =  comm_sim, color = group)) +
+    geom_point( aes( color = group),size=1.5,alpha=0.5)+ 
+    scale_color_manual(values = c("#80B1D3","#FB8072" ,"#BEBADA","#FFCC00","#8DD3C7"))+
+    labs(x="Distance (km)",y="Bray-Curtis Similarity")+
+    geom_smooth(method = 'lm', formula = y ~ x, se = F,size=1.5) +
+    stat_poly_eq(aes(label=paste(..rr.label..,..p.value.label..,sep = "~~~~")),formula = y~x,parse=T,size=2.5)+
+    theme_bw()+theme(panel.grid.major= element_blank())
+  p2 <- p1+labs(color = "Treat")
+  p2
+  library(dplyr)
+  install.packages("ggpmisc")
+  library(ggpmisc)
+  library(ggpubr)
+  library(gridExtra)
+  data <- read.csv('Tsimilarity.csv',  row.names = 1, check.names = FALSE)
+  fit <- lm(comm_sim~site_dis, data = comm_dis) 
+##iCAPM
+m(list=ls())
+  t0=Sys.time() # to calculate time cost
+  # 3 # load R packages and data
+  library(iCAMP)
+  library(ape)
+  # 1 # set folder paths and file names, please change according to the folder paths and file names in your computer.
+  # the folder saving the input files
+  wd="F:/R"
+  # the OTU table file (Tab delimited txt file)
+  comm<-t(read.csv("otutab_16S_rarefy_ck.csv",header=T,row.names=1,check.names = F))
+  # the phylogenetic tree file
+  tree<-read.tree("root_tree.nwk")
+  # the environmental varialbes
+  env<-read.csv("ENV_soilck.csv", header=TRUE, row.names=1)
+  # if you do not have env file or the env may not represent niche, skip step 7 and 8, but check the alternative way to determine binning setting, e.g. bin.size.limit.
+  # the folder to save the output. please change to a new folder even if you are just testing the example data.
+  save.wd="F:/R"
+  if(!dir.exists(save.wd)){dir.create(save.wd)}
+  # 2 # key parameter setting
+  prefix="Test"  # prefix of the output file names. usually use a project ID.
+  rand.time=100  # randomization time, 1000 is usually enough. For example test, you may set as 100 or less to save time.
+  nworker=8 # nworker is thread number for parallel computing, which depends on the CPU core number of your computer.
+  memory.G=11 # to set the memory size as you need (but should be less than the available space in your hard disk), so that calculation of large tree will not be limited by physical memory. unit is Gb.
+  setwd(wd)
+  # 4 # match sample IDs in OTU table and treatment information table
+  sampid.check=match.name(rn.list=list(comm=comm,env=env)) 
+  comm=sampid.check$comm
+  comm=comm[,colSums(comm)>0,drop=FALSE] 
+  env=sampid.check$env 
+  # 5 # match OTU IDs in OTU table and tree file
+  spid.check=match.name(cn.list=list(comm=comm),tree.list=list(tree=tree))
+  comm=spid.check$comm
+  tree=spid.check$tree
+  # 6 # calculate pairwise phylogenetic distance matrix.
+  setwd(save.wd)
+  if(!file.exists("pd.desc")) 
+  {
+    pd.big=iCAMP::pdist.big(tree = tree, wd=save.wd, nworker = nworker, memory.G = memory.G)
+  }else{
+    # if you already calculated the phylogenetic distance matrix in a previous run
+    pd.big=list()
+    pd.big$tip.label=read.csv(paste0(save.wd,"/pd.taxon.name.csv"),row.names = 1,stringsAsFactors = FALSE)[,1]
+    pd.big$pd.wd=save.wd
+    pd.big$pd.file="pd.desc"
+    pd.big$pd.name.file="pd.taxon.name.csv"
+  }
+  # 7 # assess niche preference difference between species
+  # env is required for this step.
+  setwd(save.wd)
+  niche.dif=iCAMP::dniche(env = env,comm = comm,method = "niche.value",
+                          nworker = nworker,out.dist=FALSE,bigmemo=TRUE,
+                          nd.wd=save.wd)
+  # 8 # within-bin phylogenetic signal assessment.
+  # For real data, you may try several different settings of binning, and choose the one leading to the best within-bin phylogenetic signal.
+  # env is required for this step.
+  # 8.1 # try phylogenetic binning using current setttings.
+  ds = 0.2 # setting can be changed to explore the best choice
+  bin.size.limit = 24 # setting can be changed to explore the best choice. # here set as 5 just for the small example dataset. For real data, usually try 12 to 48.
+  phylobin=taxa.binphy.big(tree = tree, pd.desc = pd.big$pd.file,pd.spname = pd.big$tip.label,
+                           pd.wd = pd.big$pd.wd, ds = ds, bin.size.limit = bin.size.limit,
+                           nworker = nworker)
+  # 8.2 # test within-bin phylogenetic signal.
+  sp.bin=phylobin$sp.bin[,3,drop=FALSE]
+  sp.ra=colMeans(comm/rowSums(comm))
+  abcut=3 # you may remove some species, if they are too rare to perform reliable correlation test.
+  commc=comm[,colSums(comm)>=abcut,drop=FALSE]
+  dim(commc)
+  spname.use=colnames(commc)
+  binps=iCAMP::ps.bin(sp.bin = sp.bin,sp.ra = sp.ra,spname.use = spname.use,
+                      pd.desc = pd.big$pd.file, pd.spname = pd.big$tip.label, pd.wd = pd.big$pd.wd,
+                      nd.list = niche.dif$nd,nd.spname = niche.dif$names,ndbig.wd = niche.dif$nd.wd,
+                      cor.method = "pearson",r.cut = 0.1, p.cut = 0.05, min.spn = 5)
+  if(file.exists(paste0(prefix,".PhyloSignalSummary.csv"))){appendy=TRUE;col.namesy=FALSE}else{appendy=FALSE;col.namesy=TRUE}
+  write.table(data.frame(ds=ds,n.min=bin.size.limit,binps$Index),file = paste0(prefix,".PhyloSignalSummary.csv"),
+              append = appendy, quote=FALSE, sep=",", row.names = FALSE,col.names = col.namesy)
+  if(file.exists(paste0(prefix,".PhyloSignalDetail.csv"))){appendy2=TRUE;col.namesy2=FALSE}else{appendy2=FALSE;col.namesy2=TRUE}
+  write.table(data.frame(ds=ds,n.min=bin.size.limit,binID=rownames(binps$detail),binps$detail),file = paste0(prefix,".PhyloSignalDetail.csv"),
+              append = appendy2, quote = FALSE, sep = ",", row.names = FALSE, col.names = col.namesy2)
+  # 9 # iCAMP analysis
+  bin.size.limit = 24
+  sig.index="Confidence" # see other options in help document of icamp.big.
+  icres=iCAMP::icamp.big(comm=comm, pd.desc = pd.big$pd.file, pd.spname=pd.big$tip.label,
+                         pd.wd = pd.big$pd.wd, rand = rand.time, tree=tree,
+                         prefix = prefix, ds = 0.2, pd.cut = NA, sp.check = TRUE,
+                         phylo.rand.scale = "within.bin", taxa.rand.scale = "across.all",
+                         phylo.metric = "bMPD", sig.index=sig.index, bin.size.limit = bin.size.limit, 
+                         nworker = nworker, memory.G = memory.G, rtree.save = FALSE, detail.save = TRUE, 
+                         qp.save = FALSE, detail.null = FALSE, ignore.zero = TRUE, output.wd = save.wd, 
+                         correct.special = TRUE, unit.sum = rowSums(comm), special.method = "depend",
+                         ses.cut = 1.96, rc.cut = 0.95, conf.cut=0.975, omit.option = "no",meta.ab = NULL)
+  setwd("F:/R")
+  treat<-read.csv("treat_A.csv",header=T,row.names=1)
+  # 10 # iCAMP bin level statistics
+  icbin=icamp.bins(icamp.detail = icres$detail, treat = treat,silent=FALSE, boot = TRUE,
+                   rand.time = rand.time,between.group = FALSE)
+  save(icbin,file = paste0(prefix,".iCAMP.Summary.rda")) # just to archive the result. rda file is automatically compressed, and easy to load into R.
+  write.csv(icbin$Pt,file = paste0(prefix,".ProcessImportance_EachGroup.csv"),row.names = FALSE)
+  write.csv(icbin$Ptk,file = paste0(prefix,".ProcessImportance_EachBin_EachGroup.csv"),row.names = FALSE)
+  write.csv(icbin$Ptuv,file = paste0(prefix,".ProcessImportance_EachTurnover.csv"),row.names = FALSE)
+  write.csv(icbin$BPtk,file = paste0(prefix,".BinContributeToProcess_EachGroup.csv"),row.names = FALSE)
+  
+  write.csv(data.frame(ID=rownames(icbin$Class.Bin),icbin$Class.Bin,stringsAsFactors = FALSE),
+            file = paste0(prefix,".Taxon_Bin.csv"),row.names = FALSE)
+  write.csv(icbin$Bin.TopClass,file = paste0(prefix,".Bin_TopTaxon.csv"),row.names = FALSE)
+  
+  # cate<-clas
+  # 
+  # # 3 # summarize each category
+  # icampcate=icamp.cate(icamp.bins.result = icbin, comm = comm, cate = cate,
+  #                      treat = treat, silent = FALSE, between.group = FALSE)
+  # 
+  # write.csv(icampcate$Ptuvx,file = "16sRecahpairsample.csv",row.names = FALSE)
+  # write.csv(icampcate$Ptx,file = "16sRamongsample.csv",row.names = FALSE)
+##MST
+setwd("E:/DY/MST/Total")
+library(NST)
+comm_S<-read.csv("OTU_rare.csv",header=T,row.names=1)
+group_S <-read.csv("group.csv", header=F,row.names = 1)
+comm_S<-t(comm_S)
+set.seed(123)
+tnst <- tNST(comm = comm_S, group = group_S, dist.method = 'jaccard', null.model = 'PF', 
+             rand = 1000, nworker = 50)
+names(tnst)
+tnst$index.pair
+tnst$index.grp
+nst_group <- tnst$index.pair.grp
+nst_group
+write.csv(nst_group,'nst.csv')
+setwd("D:/")
+install.packages("Hmisc")
+library(Hmisc)
+library(ggplot2)
+library(ggpubr)
+data = read.csv("nst.csv", header=T)
+group = read.csv("group.csv", header=F,row.names = 1)
+col=c("#80b1d3","#fb8072","#BEBADA", "#FFCC00","#8DD3C7")
+col=c("#fb8072","#FFFFB3","#8DD3C7", "#BEBADA","#80b1d3")
+my_comparisons <- list(c("T", "D"),  c("T", "R"),
+                       c("D", "S"), c("D", "P"), c("D", "R"), c("S", "P")
+                       , c("S", "R"), c("P", "R"))
+p = ggplot(data,aes(fill = group,x=factor(group,level=c("T","D","S","P","R")), y=MST.ij.ruzicka))+
+  geom_violin(position = position_dodge(width = 0.1), scale = 'width')+  
+  geom_violin(position = position_dodge(width = 0.1), scale = 'width')+  
+  geom_boxplot(alpha=1,outlier.size=0, size=0.3, width=0.3,fill="white")+
+  scale_fill_manual(values = col)+
+  labs(x="Treat", y="Modified Stochasticity Ratio(MST)", color=group)+
+  scale_x_discrete(limits=c("T","D","S","P","R")+
+  ylim(0, 1))
+mytheme = theme_classic() + theme(axis.text.x = element_text(size = 12),axis.text.y = element_text(size = 12))+
+  theme(axis.title.y= element_text(size=15))+theme(axis.title.x = element_text(size = 15))+
+  theme(legend.title=element_text(size=10),legend.text=element_text(size=10))
+p2=p+mytheme
+p2 
+ggsave("MST_box.pdf", p4, width = 150, height = 180,units = "mm")
+p4 = ggplot(data,aes(group,x=factor(group,level=c("T","D","S","P","R")), y=MST.ij.ruzicka))+###abundance： y=species
+  stat_boxplot(geom="errorbar",width=0.15)+
+  scale_fill_manual(values = col)+
+  geom_boxplot(alpha=0.7,aes(fill=group))+
+  #geom_line(aes(group=group) ,colour="#9C9C9C",lwd=0.2)+
+  #geom_point(size = 0.5)+
+  scale_y_continuous(name="Modified Stochasticity Ratio(MST)")+
+  scale_x_discrete(name="Treat")+
+  theme_bw()+
+  theme(legend.position='none')+
+  theme(panel.background = element_rect(fill = "white", colour = "black"),
+        panel.grid = element_blank(),
+        panel.border = element_blank(),
+        text = element_text(colour="black",size=12),
+        axis.title = element_text(colour="black",face="bold"),
+        axis.text=element_text(colour="black",size=12),
+        axis.title.x = element_blank(),
+        axis.title.y = element_text(colour="black", size = 12))+
+  xlab("Treat")+ylab("Modified Stochasticity Ratio(MST) ")+coord_cartesian(ylim = c(0,1))
