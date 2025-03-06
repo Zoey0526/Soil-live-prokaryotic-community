@@ -1,7 +1,7 @@
 library(permute)
 library(vegan)
 setwd('D:/')
-OTU_Tax16sCP <-read.csv("OTU_rare_TS.csv", header=TRUE,check.names = F)
+OTU_Tax16sCP <-read.csv("OTU_rare_DS.csv", header=TRUE,check.names = F)
 #Domain=aggregate(x=OTU_Tax16sCP[,2:101]/51565,by=list(OTU_Tax16sCP$Domain),FUN='sum')
 #write.csv(Domain, file = " Domain_16S.csv")
 datacol = ncol(OTU_Tax16sCP)-7
@@ -66,13 +66,13 @@ name <- rownames(data3)
 data3$finalName = sapply(strsplit(name, "\\."), function(x) tail(x, n = 1)) 
 data3$annotation_background_color = "annotation_background_color"
 data3$bkcolor = data3$color_value
-write.csv(data3,"TS.csv",row.names = T)
+write.csv(data3,"DS.csv",row.names = T)
 
 python graphlan_annotate.py --annot annot_0.txt guide_16s.txt guide_1.xml
 python graphlan.py guide_1.xml step_1_2.pdf --dpi 300 --size 3.5
  
-python graphlan_annotate.py --annot annot_1.txt guide_1.xml guide_2.xml
+python graphlan_annotate.py --annot annot_1_DS.txt guide_1.xml guide_2.xml
 python graphlan.py guide_2.xml step_2_5.pdf --dpi 300 --size 3.5
  
-python graphlan_annotate.py --annot annot_2.txt guide_2.xml guide_3.xml
+python graphlan_annotate.py --annot annot_2_DS.txt guide_2.xml guide_3.xml
 python graphlan.py guide_3.xml step_3_2.pdf --dpi 300 --size 3.5
