@@ -102,7 +102,7 @@ m(list=ls())
   # the phylogenetic tree file
   tree<-read.tree("root_tree.nwk")
   # the environmental varialbes
-  env<-read.csv("ENV_soilck.csv", header=TRUE, row.names=1)
+  env<-read.csv("ENV11.csv", header=TRUE, row.names=1)
   # if you do not have env file or the env may not represent niche, skip step 7 and 8, but check the alternative way to determine binning setting, e.g. bin.size.limit.
   # the folder to save the output. please change to a new folder even if you are just testing the example data.
   save.wd="F:/R"
