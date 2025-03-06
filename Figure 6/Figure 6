@@ -1,5 +1,5 @@
 The evaluation of soil live prokaryotic abundance and diversity analysis accuracy based on different methods
-##Copies
+## Figure 6A Copies
 library(vegan)
 library(ggplot2)
 library(ggpubr)
@@ -41,7 +41,7 @@ p1 = ggplot(species,aes(fill = treat,x=factor(treat,level=c("T","D","S","P","R")
   stat_compare_means(comparisons=my_comparisons,  label ="p.signif",method = "t.test")
 p1
 ggsave('forest_copies.pdf', p1, width = 5, height = 5)
-
+## Figure 6C Copies
 species<-read.csv("grassland_copies.csv",header=T,row.names = 1)
 species$treat<-as.factor(species$treat)
 species$ID<-as.factor(species$ID)
@@ -79,7 +79,7 @@ p2 = ggplot(species,aes(fill = treat,x=factor(treat,level=c("T","D","S","P","R")
 p2
 ggsave('forest_copies.pdf', p2, width = 5, height = 5)
 
-##removal efficiency
+## Figure 6B removal efficiency
 library(ggplot2)
 library(RColorBrewer)
 library(ggsci)
@@ -132,7 +132,7 @@ p2 <- ggplot(df, aes(x = pH, y = Sample2, color = pH)) +
 #scale_y_break(c(5,75),scales=2,space=0,expand = c(0,0))+
 p2
 ggsave('forest.pdf', p2, width = 6, height = 5)
-
+## Figure 6D removal efficiency
 df <- read.csv("grassland.csv",row.names = 1)
 df$pH<-as.factor(df$pH)
 df$Sample3<-"Box plot"
