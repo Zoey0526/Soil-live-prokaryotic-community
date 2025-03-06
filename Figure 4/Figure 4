@@ -146,7 +146,7 @@ m(list=ls())
 setwd("E:/DY/MST/Total")
 library(NST)
 comm_S<-read.csv("OTU_rare.csv",header=T,row.names=1)
-group_S <-read.csv("group.csv", header=F,row.names = 1)
+group_S <-read.csv("group_MST.csv", header=F,row.names = 1)
 comm_S<-t(comm_S)
 set.seed(123)
 tnst <- tNST(comm = comm_S, group = group_S, dist.method = 'jaccard', null.model = 'PF', 
@@ -156,7 +156,7 @@ tnst$index.pair
 tnst$index.grp
 nst_group <- tnst$index.pair.grp
 nst_group
-write.csv(nst_group,'nst.csv')
+write.csv(nst_group,'MST.csv')
 setwd("D:/")
 install.packages("Hmisc")
 library(Hmisc)
