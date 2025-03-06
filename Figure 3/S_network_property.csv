@@ -1,0 +1,12 @@
+"","network_property"
+"num.edges",4343
+"num.vertices",751
+"connectance",0.0154212161562361
+"average.degree",11.5659121171771
+"average.path.length",4.39583976598684
+"diameter",10.6597182312797
+"edge.connectivity",0
+"clustering.coefficient",0.393714837517844
+"no.clusters",19
+"centralization.betweenness",0.115736350330471
+"centralization.degree",0.140578783843764
