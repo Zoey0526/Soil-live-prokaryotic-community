@@ -1,12 +1,11 @@
 ##co-occurance network 
+  #install.packages("psych")
   library(Hmisc)
   library(psych)
   library(igraph)
-  library(Formula)
-  setwd("D:/")
-  otu <- read.csv('otuBF_781.csv', row.name = 1, check.names = FALSE)
+  otu <- read.csv('Totu.csv', row.name = 1, check.names = FALSE)
   otu1 <- otu
-  otu1[otu1>0] <- 1
+  otu1[otu1>0] <- 1 
   otu <- otu[which(rowSums(otu1) >= 25 ),]
   #write.table(otu, 'remove_60.txt', sep = '\t', row.names = TRUE)
   rowsum <- as.data.frame(rowSums(otu))
@@ -18,9 +17,8 @@
   otu <- scale(otu)
   rcorr_otu <- rcorr(as.matrix(otu), type = 'spearman')
   #corr_otu <- corr.test(otu, method = 'spearman')
-  #rcorr_otu
   p <- rcorr_otu$P
-  #p <- p.adjust(p, method = 'BH')
+  p <- p.adjust(p, method = 'BH')
   r <- rcorr_otu$r
   r[which(r < 0)]
   r[abs(r) < 0.8] <- 0
@@ -33,20 +31,21 @@
   #z <- na.omit(z)
   # write.table(data.frame(z1, check.names = FALSE), 'z1.txt', col.names = NA, sep = '\t', quote = FALSE)
   g <- graph.adjacency(z, weighted = TRUE, mode = 'undirected', diag = FALSE)
+  g
   g <- delete.vertices(g, names(degree(g)[degree(g) == 0]))
   names(degree(g)[degree(g) == 0])
   E(g)$correlation <- E(g)$weight
   E(g)$weight <- abs(E(g)$weight)
-  taxonomy <- read.csv('metadataBF.CSV', row.name = 1, check.names = FALSE)
-  taxonomy <- taxonomy[as.character(V(g)$name),]#将所有g中有的otu的信息提取出来
-  V(g)$Kingdom <- taxonomy$Kingdom
-  V(g)$Phylum <- taxonomy$Phylum
-  V(g)$Class <- taxonomy$Class
-  V(g)$Order <- taxonomy$Order
-  V(g)$Family <- taxonomy$Family
-  V(g)$Genus <- taxonomy$Genus
-  V(g)$Species <- taxonomy$Species
-  edge <- data.frame(as_edgelist(g))
+  taxonomy <- read.csv('Dmetadata.csv', row.name = 1, check.names = FALSE)
+  taxonomy <- taxonomy[as.character(V(g)$name),]
+  V(g)$kingdom <- taxonomy$Kingdom
+  V(g)$phylum <- taxonomy$Phylum
+  V(g)$class <- taxonomy$Class
+  V(g)$order <- taxonomy$Order
+  V(g)$family <- taxonomy$Family
+  V(g)$genus <- taxonomy$Genus
+  V(g)$species <- taxonomy$Species
+  edge <- data.frame(as_edgelist(g)) 
   df <- as.data.frame(E(g)$correlation)
   df[df>0] <- 1
   df[df<0] <- -1
@@ -56,35 +55,40 @@
     target = edge[[2]],
     weight = E(g)$weight,
     correlation = E(g)$correlation,
-    cor = df )
+    cor = df
+  )
   head(edge_list)
-  write.table(edge_list, 'R_edge_screen0.0001_r0.8p0.05.csv', sep = ',', row.names = FALSE, quote = FALSE)##写出边列表
+  write.table(edge_list, 'R_edge_screen0.0001_r0.8p0.05.csv', sep = ',', row.names = FALSE, quote = FALSE)
   node <- data.frame(
     id = names(V(g)),
-    kingdom =V(g)$Kingdom,
-    phylum =V(g)$Phylum,
-    class =V(g)$Class,
-    order =V(g)$Order,
-    family =V(g)$Family,
-    genus =V(g)$Genus,
-    species =V(g)$Species )
+    kingdom =V(g)$kingdom,
+    phylum =V(g)$phylum,
+    class =V(g)$class,
+    order =V(g)$order,
+    family =V(g)$family,
+    genus =V(g)$genus,
+    species =V(g)$species
+  )
   write.table(node, 'R_node_screen0.0001_r0.8p0.05.csv', sep = ',', row.names = FALSE, quote = FALSE)
-  -----------------------------------------------
   # network property
-  #  The size of the graph (number of edges)
+  # The size of the graph (number of edges)
   num.edges = length(E(g)) # length(curve_multiple(igraph))
   num.edges
-  #  Order (number of vertices) of a graph
+  # Order (number of vertices) of a graph
   num.vertices = length(V(g))# length(diversity(igraph, weights = NULL, vids = V(igraph)))
   num.vertices
-  # connectance = edge_density(g,loops=FALSE)
+  connectance = edge_density(g,loops=FALSE)# 同 graph.density;loops如果为TRUE,允许自身环（self loops即A--A或B--B）的存在
+  connectance
   # Average degree
   average.degree = mean(igraph::degree(g))
-  # Average path length
+  average.degree
+  #Average path length
   average.path.length = average.path.length(g) 
+  average.path.length
   # Diameter
   diameter = diameter(g, directed = FALSE, unconnected = TRUE, weights = NULL)
-  #  edge connectivity / group adhesion
+  diameter
+  # edge connectivity / group adhesion
   edge.connectivity = edge_connectivity(g)
   edge.connectivity
   # Clustering coefficient
@@ -95,7 +99,7 @@
   # Betweenness centralization
   centralization.betweenness = centralization.betweenness(g)$centralization 
   centralization.betweenness
-  # Degree centralization
+  #Degree centralization
   centralization.degree = centralization.degree(g)$centralization
   centralization.degree
   network_property <-c(num.edges=num.edges,num.vertices=num.vertices,connectance=connectance,
@@ -106,6 +110,160 @@
   network_property <- data.frame(network_property)
   write.csv(network_property, 'R_network_property.csv', row.names = T)
 
+##Zi-Pi
+zi.pi<-function(nodes_bulk, z.bulk, modularity_class, degree){
+z.bulk[abs(z.bulk)>0]<-1
+module<-which(colnames(nodes_bulk)==modularity_class)
+module.max<-max(nodes_bulk[,module])
+degree<-which(colnames(nodes_bulk)==degree)
+bulk.module<-list(NA)
+length(bulk.module)<-module.max
+for(i in 1:max(nodes_bulk[,module])){
+	bulk.module[[i]]<-z.bulk[which(nodes_bulk[,module]==i),which(nodes_bulk[,module]==i)]
+	bulk.module[[i]]<-as.data.frame(bulk.module[[i]])
+	rownames(bulk.module[[i]])<-rownames(z.bulk)[which(nodes_bulk[,module]==i)]
+	colnames(bulk.module[[i]])<-colnames(z.bulk)[which(nodes_bulk[,module]==i)]
+}
+z_bulk<-list(NA)
+length(z_bulk)<-module.max
+for(i in 1:length(z_bulk)){
+	z_bulk[[i]]<-bulk.module[[i]][,1]
+	z_bulk[[i]]<-as.data.frame(z_bulk[[i]])
+	colnames(z_bulk[[i]])<-"z"
+	rownames(z_bulk[[i]])<-rownames(bulk.module[[i]])
+}
+for(i in 1:max(nodes_bulk[,module])){
+	if(length(bulk.module[[i]])==1){
+		z_bulk[[i]][,1]<-0
+	}else if(sum(bulk.module[[i]])==0){
+		z_bulk[[i]][,1]<-0
+	}else{
+		k<-rowSums(bulk.module[[i]]) -1
+		mean<-mean(k)
+		sd<-sd(k)
+		if (sd==0){
+		    z_bulk[[i]][,1]<-0
+		}else{
+		    z_bulk[[i]][,1]<-(k-mean)/sd
+		}
+	}
+}
+for(i in 2:max(nodes_bulk[,module])) {
+	z_bulk[[i]]<-rbind(z_bulk[[i-1]],z_bulk[[i]])
+}
+z_bulk<-z_bulk[[module.max]]
+bulk.module1<-list(NA)
+length(bulk.module1)<-module.max
+for(i in 1:max(nodes_bulk[,module])){
+	bulk.module1[[i]]<-z.bulk[,which(nodes_bulk[,module]==i)]
+	bulk.module1[[i]]<-as.data.frame(bulk.module1[[i]])
+	rownames(bulk.module1[[i]])<-rownames(z.bulk)
+	colnames(bulk.module1[[i]])<-colnames(z.bulk)[which(nodes_bulk[,module]==i)]
+}
+c_bulk<-list(NA)
+length(c_bulk)<-module.max
+for(i in 1:length(c_bulk)){
+	c_bulk[[i]]<-z.bulk[,1]
+	c_bulk[[i]]<-as.matrix(c_bulk[[i]])
+	colnames(c_bulk[[i]])<-"c"
+	rownames(c_bulk[[i]])<-rownames(z.bulk)
+	c_bulk[[i]][,1]<-NA
+}
+for(i in 1:max(nodes_bulk[,module])){
+	c_bulk[[i]]<-rowSums(bulk.module1[[i]])
+	c_bulk[[i]]<-as.matrix(c_bulk[[i]])
+	c_bulk[[i]][which(nodes_bulk$modularity == i),] = c_bulk[[i]][which(nodes_bulk$modularity == i),] -1
+	c_bulk[[i]]<-c_bulk[[i]]*c_bulk[[i]]
+	colnames(c_bulk[[i]])<-"c"
+	rownames(c_bulk[[i]])<-rownames(z.bulk)
+}
+for(i in 2:max(nodes_bulk[,module])){
+	c_bulk[[i]]<-c_bulk[[i]]+c_bulk[[i-1]]
+}
+c_bulk<-c_bulk[[module.max]]
+for(i in 1: length(c_bulk)){
+if(nodes_bulk$degree[i]==1){
+        c_bulk[i] <- 0
+        }else{
+            c_bulk[i] <- 1-(c_bulk[i]/(nodes_bulk$degree[i]*nodes_bulk$degree[i]))
+        }
+}
+colnames(c_bulk)<-"c"
+z_c_bulk<-c_bulk
+z_c_bulk<-as.data.frame(z_c_bulk)
+z_c_bulk$z<-z_bulk[match(rownames(c_bulk),rownames(z_bulk)),]
+z_c_bulk<-z_c_bulk[,c(2,1)]
+names(z_c_bulk)[1:2]<-c('within_module_connectivities','among_module_connectivities')
+z_c_bulk$nodes_id<-rownames(z_c_bulk)
+#nodes_bulk$nodes_id<-rownames(nodes_bulk)
+z_c_bulk<-merge(z_c_bulk,nodes_bulk,by='nodes_id')
+z_c_bulk
+}
+library(Hmisc)
+library(igraph)
+library(ggplot2)
+source("zi_pi.r")
+microbiome_network_analysis <- function(data, rel_abu = 0.0001, r_cutoff = 0.8, p_cutoff = 0.05) { 
+# read in OTU abundance data and transpose it
+otu <- read.csv(data, header = TRUE, row.names = 1)
+# filter out OTUs that are present in less than half of the samples
+otu1 <- otu
+otu1[otu1 > 0] <- 1
+otu <- otu[rowSums(otu1) >= ncol(otu) / 2, ]
+# filter out low-frequency OTUs
+rowsum <- as.data.frame(rowSums(otu))
+sum_otu <- colSums(rowsum)
+otu$RA <- rowsum / sum_otu
+otu <- otu[otu$RA >= rel_abu, -ncol(otu)]
+# normalize the data
+otu <- t(otu)
+otu <- scale(otu)
+# calculate correlations and apply thresholding
+sp.cor <- rcorr(otu, type = "spearman")
+r <- sp.cor$r
+p <- sp.cor$P
+p <- p.adjust(p, method = "BH")
+r[abs(r) < r_cutoff] <- 0
+p[p >= p_cutoff] <- -1
+p[p < p_cutoff & p >= 0] <- 1
+p[p == -1] <- 0
+# create adjacency matrix and generate network graph
+adj_matrix <- abs(r * p)
+diag(adj_matrix) <- 0
+g <- graph.adjacency(adj_matrix, weighted = TRUE, mode = "undirected", diag = FALSE)
+# calculate node degree and community structure
+V(g)$degree <- degree(g)
+V(g)$modularity <- membership(cluster_fast_greedy(g))
+nodes_list <- data.frame(nodes_id = V(g)$name, degree = V(g)$degree, modularity = as.vector(V(g)$modularity))
+# calculate within-module connectivity (Zi) and among-module connectivity (Pi)
+zi_pi <- zi.pi(nodes_list, adj_matrix, degree = "degree", modularity_class = "modularity")
+# classify nodes into four groups based on Zi and Pi thresholds
+zi_pi <- na.omit(zi_pi)
+zi_pi[which(zi_pi$within_module_connectivities < 2.5 & zi_pi$among_module_connectivities < 0.62), "type"] <- "Peripherals"
+zi_pi[which(zi_pi$within_module_connectivities < 2.5 & zi_pi$among_module_connectivities > 0.62), "type"] <- "Connectors"
+zi_pi[which(zi_pi$within_module_connectivities > 2.5 & zi_pi$among_module_connectivities < 0.62), "type"] <- "Module hubs"
+zi_pi[which(zi_pi$within_module_connectivities > 2.5 & zi_pi$among_module_connectivities > 0.62), "type"] <- "Network hubs"
+write.csv(zi_pi,"zipifile.csv",row.names = F)
+# plot the network graph and node classification
+p <- ggplot(zi_pi, aes(among_module_connectivities, within_module_connectivities)) +
+geom_point(aes(color = type), alpha = 0.6, size = 2.5, shape = 19) +
+scale_y_continuous(limits = c(-2, 5)) +
+scale_color_manual(values = c("#443B84FF", "#20A486FF", "#FB8072","#2C738EFF"), 
+                       limits = c("Peripherals", "Connectors", "Module hubs", "Network hubs")) +
+ theme(panel.grid = element_blank(), axis.line = element_line(colour = "black"), 
+          panel.background = element_blank(), legend.key = element_blank()) +
+ labs(x = "Among-module connectivities", y = "Within-module connectivities", color = "") +
+ geom_vline(xintercept = 0.61, linetype = 2, linewidth = 1) +
+ geom_hline(yintercept = 2.5, linetype = 2, linewidth = 1) +  
+ theme_bw() +
+ theme(axis.ticks.length = unit(-0.25, "cm"), 
+       axis.text.x = element_text(margin = unit(c(0.5,0.5,0.5,0.5), "cm")), 
+       axis.text.y = element_text(margin = unit(c(0.5,0.5,0.5,0.5), "cm")))
+p  
+}
+p <- microbiome_network_analysis("Totu.csv")
+p
+
 ##robustness
  library(igraph)
   library(ggplot2)
@@ -115,7 +273,7 @@
   record <- c()
   record <- cbind(record,"D")
   result<-c()
-  a=read.csv("D_edge_screen0.0001_r0.8p0.05.csv",header = TRUE) 
+  a=read.csv("T_edge_screen0.0001_r0.8p0.05.csv",header = TRUE) 
   a$source=as.factor(a$source)
   a$target=as.factor(a$target)
   b=a[,c(1:2)]
@@ -138,8 +296,8 @@
     }) }
   nc<- nc.attack(ig)
   nc
-  write.csv(nc,"D-nc.csv")
-  p <- read.csv("D-nc.csv")
+  write.csv(nc,"T-nc.csv")
+  p <- read.csv("T-nc.csv")
   colnames(p)[2] <-"NC"
   p$RM <- p$X/vcount(ig)
   ncmod <- glm(NC~RM,data = p)
@@ -185,10 +343,10 @@
     geom_point(data = p, mapping = aes(x = RM, y = NC), color = "#80B1D3",alpha = 1) +
     theme_bw()
   p1
-  write.csv(result,file='D_slope&r2.csv')
+  write.csv(result,file='T_slope&r2.csv')
   result<-rbind(result,record)
   record <- c()
-  record <- cbind(record,"D")
+  record <- cbind(record,"T")
   a=read.csv("D_edge_screen0.0001_r0.8p0.05.csv",header = TRUE) 
   a$source=as.factor(a$source)
   a$target=as.factor(a$target)
