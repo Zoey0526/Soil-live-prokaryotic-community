@@ -1,26 +1,5 @@
 #Figure 4A distance-dacy
 setwd("D:/")
-  site <- read.delim('Rsite.txt', sep = '\t', row.names = 1, check.names = FALSE)
-  site_dis <- geosphere::distm(site[c('longitude', 'laititude')]) 
-  rownames(site_dis) <- rownames(site)
-  colnames(site_dis) <- rownames(site)
-  site_dis <- reshape2::melt(site_dis)
-  site_dis <- subset(site_dis, value != 0)
-  head(site_dis)
-  spe <- read.delim('OTU_rare.txt', sep = '\t', row.names = 1, check.names = FALSE)
-  spe <- data.frame(t(spe))
-  comm_sim <- 1 - as.matrix(vegan::vegdist(spe, method = 'bray'))
-  diag(comm_sim) <- 0 
-  comm_sim[upper.tri(comm_sim)] <- 0  
-  comm_sim <- reshape2::melt(comm_sim)
-  comm_sim <- subset(comm_sim, value != 0)
-  head(comm_sim)
-  comm_dis <- merge(comm_sim, site_dis, by = c('Var1', 'Var2'))
-  names(comm_dis) <- c('site1', 'site2', 'comm_sim', 'site_dis')
-  head(comm_dis)
-  write.table(comm_sim, 'BC similarity.txt', sep = '\t', row.names = FALSE, quote = FALSE)
-  write.table(comm_dis, 'Rsimilarity.txt', sep = '\t', row.names = FALSE, quote = FALSE)
-
   data <- read.csv('Tsimilarity.csv',header = T)
   install.packages("ggplot2")
   library(geosphere)
@@ -47,6 +26,7 @@ setwd("D:/")
   library(gridExtra)
   data <- read.csv('Tsimilarity.csv',  row.names = 1, check.names = FALSE)
   fit <- lm(comm_sim~site_dis, data = comm_dis) 
+
 ## Figure 4C iCAPM
 m(list=ls())
   t0=Sys.time() # to calculate time cost
@@ -161,6 +141,7 @@ m(list=ls())
   # 
   # write.csv(icampcate$Ptuvx,file = "16sRecahpairsample.csv",row.names = FALSE)
   # write.csv(icampcate$Ptx,file = "16sRamongsample.csv",row.names = FALSE)
+
 ##Figure 4B MST
 setwd("E:/DY/MST/Total")
 library(NST)
